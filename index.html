@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字マスター — Kanji Flashcards</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e63946">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="漢字マスター">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #08080f;
+      --surface:      #10101c;
+      --card:         #16162a;
+      --card2:        #1e1e36;
+      --border:       #2a2a48;
+      --primary:      #e63946;
+      --primary-dk:   #b5202c;
+      --success:      #06d6a0;
+      --error:        #ef233c;
+      --text:         #edf2f4;
+      --muted:        #8892b0;
+      --dim:          #4a5070;
+      --n5:  #06d6a0;
+      --n4:  #4cc9f0;
+      --n3:  #ffd166;
+      --n2:  #ef476f;
+      --n1:  #a78bfa;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      background-image:
+        radial-gradient(ellipse at 15% 85%, rgba(230,57,70,.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 15%, rgba(76,201,240,.06) 0%, transparent 55%);
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 620px;
+      min-height: 100vh;
+      padding: 28px 20px 40px;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── LOGO ── */
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 3.4rem;
+      color: var(--primary);
+      line-height: 1;
+      letter-spacing: .08em;
+    }
+    .logo-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 8px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+    .stat { flex: 1; text-align: center; }
+    .stat-v { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .stat-l { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+    /* ── LEVEL CARDS ── */
+    .levels-section-label {
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .levels-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 18px;
+    }
+    .lv-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: transform .18s, border-color .18s, box-shadow .18s;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+    .lv-card:hover:not(.locked) { transform: translateY(-2px); }
+    .lv-card.sel { border-color: var(--primary); background: linear-gradient(135deg, var(--card), #2a1620); box-shadow: 0 4px 24px rgba(230,57,70,.18); }
+    .lv-card.locked { opacity: .45; cursor: not-allowed; }
+    .lv-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .n5 .lv-badge  { background: rgba(6,214,160,.15);  color: var(--n5); }
+    .n4 .lv-badge  { background: rgba(76,201,240,.15); color: var(--n4); }
+    .n3 .lv-badge  { background: rgba(255,209,102,.15);color: var(--n3); }
+    .n2 .lv-badge  { background: rgba(239,71,111,.15); color: var(--n2); }
+    .n1 .lv-badge  { background: rgba(167,139,250,.15);color: var(--n1); }
+    .lv-name { font-size: .92rem; font-weight: 600; margin-bottom: 2px; }
+    .lv-desc { font-size: .7rem; color: var(--muted); margin-bottom: 10px; }
+    .lv-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+    .n5 .lv-bar-fill { background: var(--n5); }
+    .n4 .lv-bar-fill { background: var(--n4); }
+    .n3 .lv-bar-fill { background: var(--n3); }
+    .n2 .lv-bar-fill { background: var(--n2); }
+    .n1 .lv-bar-fill { background: var(--n1); }
+    .lv-bar-fill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+    .lv-stats { font-size: .68rem; color: var(--muted); }
+    .lv-lock { position: absolute; top: 12px; right: 12px; font-size: 1rem; }
+
+    /* ── MODE TOGGLE ── */
+    .mode-wrap { display: flex; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 14px; }
+    .mode-tab {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 9px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      transition: all .18s;
+      font-family: inherit;
+    }
+    .mode-tab .mode-kanji { font-family: 'Noto Serif JP', serif; }
+    .mode-tab.active { background: var(--primary); color: #fff; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 13px 28px;
+      border-radius: 12px;
+      border: none;
+      font-family: inherit;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-dk); transform: translateY(-1px); box-shadow: 0 4px 18px rgba(230,57,70,.3); }
+    .btn-ghost { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+    .btn-sm { padding: 8px 16px; font-size: .78rem; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* ── SESSION HEADER ── */
+    .sess-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 18px; }
+    .sess-info { font-size: .8rem; color: var(--muted); }
+    .sess-score { font-size: .82rem; font-weight: 700; color: var(--text); background: var(--card); border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; }
+
+    /* ── PROGRESS ── */
+    .prog-wrap { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 28px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width .4s ease; }
+
+    /* ── FLASHCARD ── */
+    .flash-card {
+      width: 100%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 28px 36px;
+      text-align: center;
+      margin-bottom: 24px;
+      transition: border-color .25s, box-shadow .25s;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .flash-card.correct { border-color: var(--success); box-shadow: 0 0 36px rgba(6,214,160,.18); }
+    .flash-card.wrong   { border-color: var(--error);   box-shadow: 0 0 36px rgba(239,35,60,.18); }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025); } }
+    .flash-card.correct, .flash-card.wrong { animation: pulse .3s ease; }
+
+    .card-mode-lbl { font-size: .68rem; color: var(--dim); text-transform: uppercase; letter-spacing: .2em; margin-bottom: 10px; }
+    .kanji-big {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 6.5rem;
+      line-height: 1.05;
+      color: var(--text);
+      transition: opacity .2s;
+    }
+    .meaning-big {
+      font-size: 1.7rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      max-width: 340px;
+    }
+    .card-reading { font-size: .82rem; color: var(--muted); margin-top: 12px; min-height: 20px; letter-spacing: .04em; }
+
+    /* ── CHOICES ── */
+    .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 20px; }
+    .choice-btn {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 10px;
+      font-family: inherit;
+      font-size: .88rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all .18s;
+      text-align: center;
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.3;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: var(--primary); background: rgba(230,57,70,.07); }
+    .choice-btn.correct-c { background: rgba(6,214,160,.12); border-color: var(--success); color: var(--success); font-weight: 700; }
+    .choice-btn.wrong-c   { background: rgba(239,35,60,.12);  border-color: var(--error);   color: var(--error); }
+    .choice-btn:disabled  { cursor: default; }
+    .choice-kanji { font-family: 'Noto Serif JP', serif; font-size: 2.4rem; }
+
+    /* ── NEXT BTN ── */
+    .next-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .18s;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .next-btn.visible { display: flex; }
+    .next-btn:hover { background: var(--primary-dk); }
+
+    /* ── RESULTS ── */
+    .result-hero { text-align: center; width: 100%; margin-bottom: 8px; }
+    .result-word {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 2.8rem;
+      color: var(--primary);
+      letter-spacing: .1em;
+    }
+    .result-title { font-size: 1.15rem; font-weight: 700; margin-top: 4px; }
+
+    .score-ring {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 3px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 24px auto;
+      box-shadow: 0 0 48px rgba(230,57,70,.2);
+    }
+    .score-n { font-size: 3.2rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .score-d { font-size: .85rem; color: var(--muted); }
+
+    .result-msg { font-size: 1rem; font-weight: 600; text-align: center; }
+    .result-sub { font-size: .82rem; color: var(--muted); text-align: center; margin-top: 4px; margin-bottom: 24px; }
+
+    .unlock-banner {
+      background: linear-gradient(135deg, rgba(6,214,160,.1), rgba(76,201,240,.08));
+      border: 1px solid rgba(6,214,160,.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+      font-size: .88rem;
+      color: var(--success);
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .mistakes-section { width: 100%; margin-bottom: 22px; }
+    .mistakes-lbl { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .18em; margin-bottom: 10px; }
+    .mistake-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 11px 14px;
+      background: var(--card);
+      border-radius: 11px;
+      margin-bottom: 7px;
+      border: 1px solid var(--border);
+    }
+    .mistake-k { font-family: 'Noto Serif JP', serif; font-size: 1.9rem; color: var(--error); min-width: 42px; text-align: center; }
+    .mistake-info { flex: 1; }
+    .mistake-m { font-size: .88rem; font-weight: 600; }
+    .mistake-r { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── ACTIONS ── */
+    .actions { display: flex; gap: 10px; width: 100%; }
+    .actions .btn { flex: 1; }
+
+    /* ── DIVIDER ── */
+    .sep { width: 100%; height: 1px; background: var(--border); margin: 18px 0; }
+
+    /* ── KEYBOARD HINT ── */
+    .kbd-hint { font-size: .65rem; color: var(--dim); text-align: center; margin-top: 8px; }
+    kbd { background: var(--card2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: inherit; font-size: .65rem; }
+
+    /* ── NUMBERS SCREEN ── */
+    .num-card {
+      width: 100%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 28px 36px;
+      text-align: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: border-color .25s, box-shadow .25s;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .num-card:hover { border-color: var(--primary); box-shadow: 0 0 32px rgba(230,57,70,.12); }
+    .num-number { font-size: 5rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .num-reveal { margin-top: 22px; transition: opacity .3s; }
+    .num-reveal.hidden { opacity: 0; pointer-events: none; }
+    .num-kanji { font-family: 'Noto Serif JP', serif; font-size: 3.6rem; color: var(--primary); line-height: 1.1; }
+    .num-reading { font-size: .88rem; color: var(--muted); margin-top: 10px; letter-spacing: .04em; }
+    .num-hint { font-size: .65rem; color: var(--dim); margin-top: 18px; }
+    .num-nav { display: flex; gap: 10px; width: 100%; }
+    .num-nav .btn { flex: 1; }
+    .num-counter-wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px; }
+    .num-entry-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--card), var(--card2));
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      text-align: left;
+      cursor: pointer;
+      transition: all .18s;
+      font-family: inherit;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .num-entry-btn:hover { border-color: var(--primary); box-shadow: 0 4px 18px rgba(230,57,70,.15); transform: translateY(-1px); }
+    .num-entry-kanji { font-family: 'Noto Serif JP', serif; font-size: 2.2rem; color: var(--primary); min-width: 48px; }
+    .num-entry-text { flex: 1; }
+    .num-entry-title { font-size: .92rem; font-weight: 700; margin-bottom: 2px; }
+    .num-entry-desc { font-size: .72rem; color: var(--muted); }
+
+    /* ── PASSWORD SCREEN ── */
+    .pwd-card {
+      width: 100%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 24px;
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .pwd-icon { font-size: 2.4rem; margin-bottom: 4px; }
+    .pwd-title { font-size: 1.1rem; font-weight: 700; }
+    .pwd-sub { font-size: .8rem; color: var(--muted); text-align: center; }
+    .pwd-input {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 1rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+      letter-spacing: .1em;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .pwd-input:focus { border-color: var(--primary); }
+    .pwd-input.shake {
+      animation: shake .35s ease;
+      border-color: var(--error);
+    }
+    .pwd-error { font-size: .8rem; color: var(--error); min-height: 18px; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 460px) {
+      .kanji-big { font-size: 5rem; }
+      .levels-grid { grid-template-columns: 1fr; }
+      .logo-kanji { font-size: 2.8rem; }
+      .meaning-big { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════
+     SCREEN: PASSWORD
+════════════════════════════════ -->
+<div class="screen active" id="screen-password">
+
+  <div class="logo">
+    <div class="logo-kanji">漢字マスター</div>
+    <div class="logo-sub">Kanji Flashcards · Apprentissage</div>
+  </div>
+
+  <div class="pwd-card">
+    <div class="pwd-icon">🔐</div>
+    <div class="pwd-title">Accès privé</div>
+    <div class="pwd-sub">Entre ton mot de passe pour continuer</div>
+    <input
+      type="password"
+      id="pwd-input"
+      class="pwd-input"
+      placeholder="••••••••"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+      autocomplete="current-password"
+    />
+    <div class="pwd-error" id="pwd-error"></div>
+    <button class="btn btn-primary" onclick="checkPassword()">Déverrouiller →</button>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════
+     SCREEN: HOME
+════════════════════════════════ -->
+<div class="screen" id="screen-home">
+
+  <div class="logo">
+    <div class="logo-kanji">漢字マスター</div>
+    <div class="logo-sub">Kanji Flashcards · Apprentissage</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-v" id="s-mastered">0</div>
+      <div class="stat-l">Maîtrisés</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v" id="s-streak">0</div>
+      <div class="stat-l">🔥 Série</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v" id="s-sessions">0</div>
+      <div class="stat-l">Sessions</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v" id="s-total">—</div>
+      <div class="stat-l">Total</div>
+    </div>
+  </div>
+
+  <div class="levels-section-label">Choisir un niveau</div>
+  <div class="levels-grid" id="levels-grid"></div>
+
+  <div class="mode-wrap">
+    <button class="mode-tab active" id="tab-km" onclick="setMode('km')">
+      <span class="mode-kanji">漢字</span> → Sens
+    </button>
+    <button class="mode-tab" id="tab-mk" onclick="setMode('mk')">
+      Sens → <span class="mode-kanji">漢字</span>
+    </button>
+  </div>
+
+  <button class="btn btn-primary" onclick="startSession()">▶ Commencer la session (10 kanji)</button>
+
+  <div class="sep"></div>
+  <button class="num-entry-btn" onclick="showNumbers()">
+    <div class="num-entry-kanji">数字</div>
+    <div class="num-entry-text">
+      <div class="num-entry-title">Apprendre à compter</div>
+      <div class="num-entry-desc">0 → 10 000 · kanji + prononciation</div>
+    </div>
+    <span style="color:var(--dim);font-size:1.2rem">›</span>
+  </button>
+
+  <div class="sep"></div>
+  <button class="btn btn-ghost btn-sm" onclick="resetConfirm()" style="width:100%">Réinitialiser la progression</button>
+</div>
+
+
+<!-- ═══════════════════════════════
+     SCREEN: SESSION
+════════════════════════════════ -->
+<div class="screen" id="screen-session">
+  <div class="sess-header">
+    <button class="btn btn-ghost btn-sm" onclick="goHome()">← Quitter</button>
+    <div class="sess-info" id="sess-counter">Kanji 1 / 10</div>
+    <div class="sess-score" id="sess-score">✓ 0</div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+  </div>
+
+  <div class="flash-card" id="flash-card">
+    <div class="card-mode-lbl" id="card-lbl">Quel est le sens ?</div>
+    <div id="card-main"></div>
+    <div class="card-reading" id="card-reading"></div>
+  </div>
+
+  <div class="choices-grid" id="choices-grid"></div>
+
+  <button class="next-btn" id="next-btn" onclick="nextCard()">Suivant →</button>
+  <div class="kbd-hint">Raccourcis : <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> pour choisir · <kbd>Entrée</kbd> pour suivant</div>
+</div>
+
+
+<!-- ═══════════════════════════════
+     SCREEN: RESULTS
+════════════════════════════════ -->
+<div class="screen" id="screen-results">
+  <div class="result-hero">
+    <div class="result-word" id="res-word">完了</div>
+    <div class="result-title" id="res-title">Session terminée !</div>
+  </div>
+
+  <div class="score-ring">
+    <div class="score-n" id="res-score">0</div>
+    <div class="score-d" id="res-denom">/ 10</div>
+  </div>
+
+  <div class="result-msg" id="res-msg"></div>
+  <div class="result-sub" id="res-sub"></div>
+
+  <div class="unlock-banner" id="unlock-banner" style="display:none"></div>
+
+  <div class="mistakes-section" id="mistakes-section" style="display:none">
+    <div class="mistakes-lbl">À revoir</div>
+    <div id="mistakes-list"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="goHome()">Accueil</button>
+    <button class="btn btn-primary" style="flex:2" onclick="startSession()">↺ Rejouer ce niveau</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════
+     SCREEN: NUMBERS
+════════════════════════════════ -->
+<div class="screen" id="screen-numbers">
+  <div class="sess-header">
+    <button class="btn btn-ghost btn-sm" onclick="goHome()">← Retour</button>
+    <div class="sess-info">数字 · Compter</div>
+    <div class="sess-score" id="num-counter">1 / 44</div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-fill" id="num-prog" style="width:0%"></div>
+  </div>
+
+  <!-- Mode principal : Apprentissage | Quiz -->
+  <div class="mode-wrap">
+    <button class="mode-tab active" id="num-tab-learn" onclick="setNumMode('learn')">Apprentissage</button>
+    <button class="mode-tab" id="num-tab-quiz"  onclick="setNumMode('quiz')">Quiz</button>
+  </div>
+
+  <!-- Sous-toggle apprentissage : ordre -->
+  <div class="mode-wrap" id="num-order-wrap">
+    <button class="mode-tab active" id="num-tab-order"   onclick="setNumOrder('order')">Dans l'ordre</button>
+    <button class="mode-tab"        id="num-tab-shuffle" onclick="setNumOrder('shuffle')">Aléatoire</button>
+  </div>
+
+  <!-- Sous-toggle quiz : direction -->
+  <div class="mode-wrap" id="num-dir-wrap" style="display:none">
+    <button class="mode-tab active" id="num-tab-nk" onclick="setNumDir('nk')">123 → <span style="font-family:'Noto Serif JP',serif">漢字</span></button>
+    <button class="mode-tab"        id="num-tab-kn" onclick="setNumDir('kn')"><span style="font-family:'Noto Serif JP',serif">漢字</span> → 123</button>
+  </div>
+
+  <!-- Carte -->
+  <div class="num-card" id="num-card" onclick="revealNum()">
+    <div id="num-card-main"></div>
+    <div class="num-reveal hidden" id="num-reveal">
+      <div id="num-card-reveal"></div>
+    </div>
+    <div class="num-hint" id="num-hint">Appuie pour révéler</div>
+  </div>
+
+  <!-- Choix (quiz uniquement) -->
+  <div class="choices-grid" id="num-choices" style="display:none"></div>
+
+  <!-- Bouton suivant quiz -->
+  <button class="next-btn" id="num-next-quiz" onclick="nextNumQuiz()">Suivant →</button>
+
+  <!-- Navigation apprentissage -->
+  <div class="num-nav" id="num-nav-learn">
+    <button class="btn btn-ghost" id="num-prev" onclick="prevNum()">← Précédent</button>
+    <button class="btn btn-primary" id="num-next-learn" onclick="nextNum()">Suivant →</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════
+     SCRIPT
+════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────────
+//  AUTH
+// ──────────────────────────────────────────────────────
+const PASSWORD_HASH = "876beda7dd9640b9785c43e22df462fb58a8c23098284c4ff6fbfb29fd722733"; // ← remplacer par ton hash (voir instructions)
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function checkPassword() {
+  const input = document.getElementById("pwd-input");
+  const error = document.getElementById("pwd-error");
+  const hash  = await sha256(input.value);
+
+  if (hash === PASSWORD_HASH) {
+    sessionStorage.setItem("kanji_auth", "1");
+    input.value = "";
+    error.textContent = "";
+    show("screen-home");
+    renderHome();
+  } else {
+    error.textContent = "Mot de passe incorrect";
+    input.classList.remove("shake");
+    void input.offsetWidth; // reset animation
+    input.classList.add("shake");
+    input.value = "";
+    setTimeout(() => input.classList.remove("shake"), 400);
+    input.focus();
+  }
+}
+
+// ──────────────────────────────────────────────────────
+//  KANJI DATA
+//  Format: { k: kanji, m: sens (fr), r: lecture (romaji) }
+// ──────────────────────────────────────────────────────
+const DB = {
+  5: [
+    // Nombres
+    {k:"一",m:"un",r:"ichi / hito-"},
+    {k:"二",m:"deux",r:"ni / futa-"},
+    {k:"三",m:"trois",r:"san / mi-"},
+    {k:"四",m:"quatre",r:"shi / yon"},
+    {k:"五",m:"cinq",r:"go / itsu-"},
+    {k:"六",m:"six",r:"roku / mu-"},
+    {k:"七",m:"sept",r:"shichi / nana"},
+    {k:"八",m:"huit",r:"hachi / ya-"},
+    {k:"九",m:"neuf",r:"kyuu / kokono-"},
+    {k:"十",m:"dix",r:"juu / too"},
+    {k:"百",m:"cent",r:"hyaku"},
+    {k:"千",m:"mille",r:"sen / chi"},
+    {k:"万",m:"dix mille",r:"man / ban"},
+    {k:"円",m:"yen / cercle",r:"en"},
+    // Temps
+    {k:"日",m:"jour / soleil",r:"nichi / hi"},
+    {k:"月",m:"mois / lune",r:"gatsu / tsuki"},
+    {k:"年",m:"année",r:"nen / toshi"},
+    {k:"時",m:"heure / moment",r:"ji / toki"},
+    {k:"間",m:"intervalle / entre",r:"kan / aida"},
+    {k:"分",m:"minute / part",r:"fun / bu"},
+    {k:"半",m:"moitié / demi",r:"han"},
+    {k:"前",m:"avant / devant",r:"zen / mae"},
+    {k:"後",m:"après / derrière",r:"go / ato"},
+    {k:"午",m:"(la période du) midi",r:"go"},
+    {k:"朝",m:"matin",r:"chou / asa"},
+    {k:"昼",m:"milieu de journée / midi",r:"chuu / hiru"},
+    {k:"夜",m:"nuit",r:"ya / yoru"},
+    {k:"毎",m:"chaque / tous les",r:"mai"},
+    {k:"週",m:"semaine",r:"shuu"},
+    // Éléments / jours
+    {k:"火",m:"feu / mardi",r:"ka / hi"},
+    {k:"水",m:"eau / mercredi",r:"sui / mizu"},
+    {k:"木",m:"arbre / jeudi",r:"moku / ki"},
+    {k:"金",m:"or / argent / vendredi",r:"kin / kane"},
+    {k:"土",m:"terre / sol / samedi",r:"do / tsuchi"},
+    {k:"曜",m:"jour de la semaine",r:"you"},
+    // Nature / lieux
+    {k:"山",m:"montagne",r:"san / yama"},
+    {k:"川",m:"rivière / fleuve",r:"sen / kawa"},
+    {k:"田",m:"rizière / champ",r:"den / ta"},
+    // Positions / tailles
+    {k:"上",m:"haut / dessus",r:"jou / ue"},
+    {k:"下",m:"bas / dessous",r:"ka / shita"},
+    {k:"中",m:"milieu / intérieur",r:"chuu / naka"},
+    {k:"大",m:"grand",r:"dai / oo-"},
+    {k:"小",m:"petit",r:"shou / chii-"},
+    {k:"右",m:"droite",r:"u / migi"},
+    {k:"左",m:"gauche",r:"sa / hidari"},
+    {k:"北",m:"nord",r:"hoku / kita"},
+    {k:"南",m:"sud",r:"nan / minami"},
+    {k:"東",m:"est",r:"tou / higashi"},
+    {k:"西",m:"ouest",r:"sei / nishi"},
+    // Corps / personnes
+    {k:"人",m:"personne / humain",r:"jin / hito"},
+    {k:"口",m:"bouche",r:"kou / kuchi"},
+    {k:"目",m:"œil",r:"moku / me"},
+    {k:"耳",m:"oreille",r:"ji / mimi"},
+    {k:"手",m:"main",r:"shu / te"},
+    {k:"足",m:"pied / jambe",r:"soku / ashi"},
+    // Famille
+    {k:"父",m:"père",r:"fu / chichi"},
+    {k:"母",m:"mère",r:"bo / haha"},
+    {k:"子",m:"enfant",r:"shi / ko"},
+    {k:"友",m:"ami(e)",r:"yuu / tomo"},
+    {k:"男",m:"homme",r:"dan / otoko"},
+    {k:"女",m:"femme",r:"jo / onna"},
+    // Société
+    {k:"国",m:"pays / nation",r:"koku / kuni"},
+    {k:"外",m:"extérieur / dehors",r:"gai / soto"},
+    // École
+    {k:"学",m:"étudier / apprentissage",r:"gaku / mana-"},
+    {k:"校",m:"école",r:"kou"},
+    {k:"先",m:"avant / précédent",r:"sen / saki"},
+    {k:"生",m:"vie / naître",r:"sei / i-"},
+    // Verbes courants
+    {k:"何",m:"quoi / que / combien",r:"ka / nani"},
+    {k:"今",m:"maintenant / présent",r:"kon / ima"},
+    {k:"来",m:"venir",r:"rai / ku-"},
+    {k:"行",m:"aller",r:"kou / i-"},
+    {k:"食",m:"manger / nourriture",r:"shoku / ta-"},
+    {k:"飲",m:"boire",r:"in / no-"},
+    {k:"見",m:"voir / regarder",r:"ken / mi-"},
+    {k:"聞",m:"entendre / demander",r:"bun / ki-"},
+    {k:"書",m:"écrire",r:"sho / ka-"},
+    {k:"読",m:"lire",r:"doku / yo-"},
+    {k:"話",m:"parler / histoire",r:"wa / hana-"},
+    {k:"言",m:"dire / parole",r:"gen / i-"},
+    {k:"買",m:"acheter",r:"bai / ka-"},
+    // Couleurs
+    {k:"白",m:"blanc",r:"haku / shiro"},
+    {k:"黒",m:"noir",r:"koku / kuro"},
+    {k:"赤",m:"rouge",r:"seki / aka"},
+    {k:"青",m:"bleu / vert",r:"sei / ao"},
+    // Adjectifs
+    {k:"高",m:"haut / cher",r:"kou / taka-"},
+    {k:"安",m:"bon marché / calme",r:"an / yasu-"},
+    {k:"新",m:"nouveau / récent",r:"shin / atara-"},
+    {k:"古",m:"ancien / vieux",r:"ko / furu-"},
+    {k:"長",m:"long / chef",r:"chou / naga-"},
+    // Langue / texte
+    {k:"語",m:"langue / mot",r:"go / kata-"},
+    {k:"字",m:"caractère / lettre",r:"ji"},
+    {k:"文",m:"texte / phrase",r:"bun / fumi"},
+    {k:"本",m:"livre / origine",r:"hon / moto"},
+  ],
+
+  4: [
+    {k:"会",m:"rencontrer / réunion",r:"kai / a-"},
+    {k:"社",m:"société / entreprise",r:"sha"},
+    {k:"家",m:"maison / famille",r:"ka / ie"},
+    {k:"電",m:"électricité",r:"den"},
+    {k:"車",m:"voiture / roue",r:"sha / kuruma"},
+    {k:"駅",m:"gare",r:"eki"},
+    {k:"道",m:"route / chemin / voie",r:"dou / michi"},
+    {k:"地",m:"terre / lieu",r:"chi / ji"},
+    {k:"図",m:"carte / dessin / plan",r:"zu"},
+    {k:"室",m:"chambre / pièce / salle",r:"shitsu"},
+    {k:"員",m:"membre / personnel",r:"in"},
+    {k:"店",m:"magasin / boutique",r:"ten / mise"},
+    {k:"物",m:"chose / objet",r:"mono / butsu"},
+    {k:"用",m:"utiliser / usage",r:"you / mochi-"},
+    {k:"思",m:"penser / croire",r:"shi / omo-"},
+    {k:"知",m:"savoir / connaître",r:"chi / shi-"},
+    {k:"考",m:"réfléchir / penser",r:"kou / kanga-"},
+    {k:"教",m:"enseigner / religion",r:"kyou / oshi-"},
+    {k:"習",m:"apprendre / pratiquer",r:"shuu / nara-"},
+    {k:"音",m:"son / bruit",r:"on / oto"},
+    {k:"楽",m:"musique / plaisir / facile",r:"gaku / raku / tano-"},
+    {k:"歌",m:"chanter / chanson",r:"ka / uta"},
+    {k:"強",m:"fort / puissant",r:"kyou / tsuyo-"},
+    {k:"弱",m:"faible / fragile",r:"jaku / yowa-"},
+    {k:"早",m:"tôt / rapide",r:"sou / haya-"},
+    {k:"同",m:"même / pareil",r:"dou / ona-"},
+    {k:"正",m:"correct / juste",r:"sei / tada-"},
+    {k:"動",m:"mouvement / bouger",r:"dou / ugo-"},
+    {k:"止",m:"arrêter / cesser",r:"shi / to-"},
+    {k:"始",m:"commencer / débuter",r:"shi / haji-"},
+    {k:"終",m:"finir / terminer",r:"shuu / o-"},
+    {k:"開",m:"ouvrir",r:"kai / a-"},
+    {k:"閉",m:"fermer / clore",r:"hei / shi-"},
+    {k:"入",m:"entrer / introduire",r:"nyuu / i- / hai-"},
+    {k:"出",m:"sortir / produire",r:"shutsu / de-"},
+    {k:"起",m:"se lever / survenir",r:"ki / o-"},
+    {k:"待",m:"attendre / patienter",r:"tai / ma-"},
+    {k:"使",m:"utiliser / employer",r:"shi / tsuka-"},
+    {k:"働",m:"travailler",r:"dou / hata-"},
+    {k:"帰",m:"rentrer / retourner",r:"ki / kae-"},
+    {k:"急",m:"urgent / soudain",r:"kyuu / iso-"},
+    {k:"近",m:"proche / voisin",r:"kin / chika-"},
+    {k:"遠",m:"loin / distant",r:"en / too-"},
+    {k:"多",m:"beaucoup / nombreux",r:"ta / oo-"},
+    {k:"少",m:"peu / rare",r:"shou / suku-"},
+    {k:"広",m:"large / spacieux",r:"kou / hiro-"},
+    {k:"明",m:"clair / brillant",r:"mei / aka- / haru-"},
+    {k:"暗",m:"sombre / obscur",r:"an / kura-"},
+    {k:"重",m:"lourd / important",r:"juu / omo-"},
+    {k:"軽",m:"léger / simple",r:"kei / karu-"},
+    {k:"方",m:"direction / méthode",r:"hou / kata"},
+    {k:"送",m:"envoyer / expédier",r:"sou / oku-"},
+    {k:"受",m:"recevoir / accepter",r:"ju / u-"},
+    {k:"取",m:"prendre / obtenir",r:"shu / to-"},
+    {k:"持",m:"tenir / posséder",r:"ji / mo-"},
+    {k:"忘",m:"oublier",r:"bou / wasu-"},
+    {k:"覚",m:"se souvenir / apprendre",r:"kaku / oba-"},
+    {k:"転",m:"rouler / tomber / changer",r:"ten / koro-"},
+    {k:"走",m:"courir",r:"sou / hashi-"},
+    {k:"泳",m:"nager",r:"ei / oyo-"},
+    {k:"乗",m:"monter / prendre (transport)",r:"jou / no-"},
+    {k:"降",m:"descendre / tomber (pluie)",r:"kou / o- / fu-"},
+    {k:"歩",m:"marcher / pas",r:"ho / aru-"},
+    {k:"引",m:"tirer / attirer",r:"in / hi-"},
+    {k:"押",m:"pousser / presser",r:"ou / o-"},
+    {k:"洗",m:"laver / nettoyer",r:"sen / ara-"},
+    {k:"切",m:"couper / important",r:"setsu / ki-"},
+    {k:"集",m:"rassembler / collecter",r:"shuu / atsu-"},
+    {k:"気",m:"esprit / énergie / humeur",r:"ki / ke"},
+    {k:"体",m:"corps / physique",r:"tai / kara-"},
+    {k:"心",m:"cœur / esprit / âme",r:"shin / kokoro"},
+    {k:"病",m:"maladie / tomber malade",r:"byou / ya-"},
+    {k:"医",m:"médecin / médecine",r:"i"},
+    {k:"薬",m:"médicament / remède",r:"yaku / kusuri"},
+    {k:"頭",m:"tête / esprit",r:"tou / atama"},
+    {k:"顔",m:"visage / face",r:"gan / kao"},
+    {k:"声",m:"voix / son",r:"sei / koe"},
+    {k:"空",m:"ciel / vide",r:"kuu / sora"},
+    {k:"海",m:"mer / océan",r:"kai / umi"},
+    {k:"花",m:"fleur",r:"ka / hana"},
+    {k:"雨",m:"pluie",r:"u / ame"},
+    {k:"雪",m:"neige",r:"setsu / yuki"},
+    {k:"風",m:"vent / style",r:"fuu / kaze"},
+    {k:"天",m:"ciel / paradis",r:"ten / ama-"},
+    {k:"星",m:"étoile / astre",r:"sei / hoshi"},
+    {k:"光",m:"lumière / briller",r:"kou / hikari"},
+    {k:"色",m:"couleur / teinte",r:"shoku / iro"},
+    {k:"形",m:"forme / figure",r:"kei / katachi"},
+    {k:"数",m:"nombre / compter",r:"suu / kazu"},
+    {k:"力",m:"force / puissance",r:"ryoku / chikara"},
+    {k:"点",m:"point / score",r:"ten"},
+    {k:"線",m:"ligne / trait / fil",r:"sen"},
+    {k:"面",m:"face / surface / aspect",r:"men / omote"},
+    {k:"次",m:"suivant / prochain",r:"ji / tsugi"},
+    {k:"度",m:"degré / fois",r:"do / tabi"},
+    {k:"回",m:"tour / fois / retour",r:"kai / mawa-"},
+    {k:"変",m:"changer / étrange",r:"hen / ka-"},
+    {k:"意",m:"intention / sens",r:"i"},
+    {k:"感",m:"sentiment / ressentir",r:"kan"},
+    {k:"情",m:"sentiment / situation",r:"jou / nasa-"},
+    {k:"愛",m:"amour / aimer",r:"ai"},
+    {k:"好",m:"aimer / bien",r:"kou / su- / yo-"},
+  ],
+
+  3: [
+    {k:"業",m:"métier / industrie / karma",r:"gyou / waza"},
+    {k:"場",m:"lieu / endroit / scène",r:"jou / ba"},
+    {k:"研",m:"rechercher / aiguiser",r:"ken"},
+    {k:"究",m:"recherche approfondie",r:"kyuu / kiwa-"},
+    {k:"科",m:"département / branche / science",r:"ka"},
+    {k:"技",m:"technique / compétence",r:"gi / waza"},
+    {k:"術",m:"art / technique / méthode",r:"jutsu"},
+    {k:"代",m:"génération / ère / substituer",r:"dai / ka-"},
+    {k:"表",m:"surface / tableau / exprimer",r:"hyou / omote"},
+    {k:"実",m:"réel / fruit / résultat",r:"jitsu / mi"},
+    {k:"現",m:"présent / réel / apparaître",r:"gen / arawa-"},
+    {k:"問",m:"question / problème",r:"mon / to-"},
+    {k:"題",m:"sujet / titre / problème",r:"dai"},
+    {k:"答",m:"réponse / répondre",r:"tou / kota-"},
+    {k:"質",m:"qualité / nature",r:"shitsu / shichi"},
+    {k:"量",m:"quantité / mesurer",r:"ryou / haka-"},
+    {k:"記",m:"noter / se souvenir",r:"ki / shiru-"},
+    {k:"事",m:"affaire / chose / fait",r:"ji / koto"},
+    {k:"者",m:"personne / individu",r:"sha / mono"},
+    {k:"所",m:"endroit / lieu / bureau",r:"sho / tokoro"},
+    {k:"部",m:"partie / département",r:"bu"},
+    {k:"作",m:"créer / fabriquer / œuvre",r:"saku / tsuku-"},
+    {k:"品",m:"article / qualité / objet",r:"hin / shina"},
+    {k:"特",m:"spécial / particulier",r:"toku"},
+    {k:"別",m:"différent / autre / séparer",r:"betsu / wa-"},
+    {k:"定",m:"décider / fixer / certain",r:"tei / sada-"},
+    {k:"決",m:"décider / résoudre",r:"ketsu / ki-"},
+    {k:"合",m:"correspondre / se réunir",r:"gou / a-"},
+    {k:"関",m:"concerner / barrière / lien",r:"kan / seki"},
+    {k:"続",m:"continuer / suivre",r:"zoku / tsuzu-"},
+    {k:"加",m:"ajouter / augmenter",r:"ka / kuwa-"},
+    {k:"増",m:"augmenter / croître",r:"zou / fu-"},
+    {k:"減",m:"diminuer / réduire",r:"gen / he-"},
+    {k:"進",m:"avancer / progresser",r:"shin / susu-"},
+    {k:"退",m:"reculer / se retirer",r:"tai / shizo-"},
+    {k:"失",m:"perdre / manquer",r:"shitsu / ushina-"},
+    {k:"得",m:"obtenir / profiter",r:"toku / e-"},
+    {k:"経",m:"passer par / gérer",r:"kei / he-"},
+    {k:"験",m:"expérience / examen",r:"ken"},
+    {k:"成",m:"devenir / réussir / achever",r:"sei / na-"},
+    {k:"達",m:"atteindre / (pluriel)",r:"tatsu / tachi"},
+    {k:"苦",m:"souffrance / amer / difficile",r:"ku / kuru- / niga-"},
+    {k:"悲",m:"tristesse / triste",r:"hi / kana-"},
+    {k:"喜",m:"joie / se réjouir",r:"ki / yoroko-"},
+    {k:"怒",m:"colère / se mettre en colère",r:"do / oko-"},
+    {k:"恐",m:"peur / crainte / terrible",r:"kyou / oso-"},
+    {k:"注",m:"verser / faire attention",r:"chuu / sosogu"},
+    {k:"識",m:"connaissance / conscience",r:"shiki"},
+    {k:"想",m:"idée / imaginer",r:"sou / omo-"},
+    {k:"念",m:"pensée / désir / prière",r:"nen / omo-"},
+    {k:"必",m:"nécessairement / inévitable",r:"hitsu / kana-"},
+    {k:"要",m:"besoin / important",r:"you / i-"},
+    {k:"払",m:"payer / balayer",r:"futsu / hara-"},
+    {k:"借",m:"emprunter / louer",r:"sha / kari-"},
+    {k:"貸",m:"prêter / louer (à qqn)",r:"tai / ka-"},
+    {k:"売",m:"vendre",r:"bai / u-"},
+    {k:"選",m:"choisir / sélectionner",r:"sen / era-"},
+    {k:"約",m:"accord / environ",r:"yaku"},
+    {k:"礼",m:"politesse / cérémonie",r:"rei"},
+    {k:"祭",m:"festival / fête",r:"sai / matsu-"},
+    {k:"式",m:"cérémonie / style / formule",r:"shiki"},
+    {k:"法",m:"loi / méthode",r:"hou / nori"},
+    {k:"規",m:"règle / norme",r:"ki"},
+    {k:"政",m:"politique / gouvernement",r:"sei / matsu-"},
+    {k:"治",m:"gouverner / guérir",r:"chi / ji / osa-"},
+    {k:"全",m:"complet / entier / sûr",r:"zen / matta-"},
+    {k:"真",m:"vrai / réel",r:"shin / ma"},
+    {k:"確",m:"certain / sûr / confirmer",r:"kaku / tashi-"},
+    {k:"共",m:"ensemble / partagé",r:"kyou / tomo"},
+    {k:"以",m:"avec / par / depuis",r:"i"},
+    {k:"対",m:"face à / contre / paire",r:"tai / tsui"},
+    {k:"相",m:"aspect / mutuel / ministre",r:"sou / ai"},
+    {k:"様",m:"aspect / façon / Monsieur",r:"you / sama"},
+    {k:"的",m:"cible / -ique / -al",r:"teki / mato"},
+    {k:"的",m:"cible / adjectivant (-ique)",r:"teki / mato"},
+    {k:"化",m:"transformer / -isation",r:"ka / ke / ba-"},
+    {k:"活",m:"activité / vivre",r:"katsu / i-"},
+    {k:"用",m:"utiliser / besoin",r:"you / mochi-"},
+    {k:"場",m:"lieu / endroit",r:"jou / ba"},
+    {k:"数",m:"nombre / compter",r:"suu / kazu"},
+    {k:"列",m:"rangée / file / liste",r:"retsu"},
+    {k:"並",m:"s'aligner / ordinaire",r:"hei / nara-"},
+    {k:"交",m:"croiser / alterner / ami",r:"kou / kawa-"},
+    {k:"通",m:"passer par / communication",r:"tsuu / too-"},
+  ],
+
+  2: [
+    {k:"概",m:"idée générale / aperçu",r:"gai"},
+    {k:"象",m:"phénomène / éléphant / image",r:"shou / zou"},
+    {k:"徴",m:"signe / caractéristique",r:"chou / shirushi"},
+    {k:"索",m:"chercher / corde",r:"saku"},
+    {k:"探",m:"chercher / explorer",r:"tan / saga-"},
+    {k:"査",m:"inspecter / enquêter",r:"sa"},
+    {k:"調",m:"ajuster / enquêter / ton",r:"chou / shira-"},
+    {k:"検",m:"inspecter / examiner",r:"ken"},
+    {k:"証",m:"preuve / certifier",r:"shou / akashi"},
+    {k:"判",m:"jugement / décider",r:"han / ban"},
+    {k:"断",m:"couper / décider / refuser",r:"dan / kota-"},
+    {k:"論",m:"théorie / argumenter",r:"ron"},
+    {k:"議",m:"délibérer / discussion",r:"gi"},
+    {k:"批",m:"critiquer / approuver",r:"hi"},
+    {k:"評",m:"évaluer / critique",r:"hyou"},
+    {k:"存",m:"exister / penser / conserver",r:"son / zon"},
+    {k:"在",m:"être / exister / présent",r:"zai / a-"},
+    {k:"有",m:"avoir / exister / posséder",r:"yuu / a-"},
+    {k:"無",m:"néant / ne pas avoir",r:"mu / bu / na-"},
+    {k:"限",m:"limite / restreindre",r:"gen / kagi-"},
+    {k:"超",m:"dépasser / extrêmement",r:"chou / ko-"},
+    {k:"域",m:"zone / territoire / domaine",r:"iki"},
+    {k:"範",m:"modèle / norme / portée",r:"han"},
+    {k:"境",m:"frontière / limite / condition",r:"kyou / sakai"},
+    {k:"状",m:"état / forme / situation",r:"jou"},
+    {k:"態",m:"état / posture / attitude",r:"tai / waza"},
+    {k:"観",m:"voir / perspective / point de vue",r:"kan / mi-"},
+    {k:"角",m:"angle / coin / corne",r:"kaku / kado / tsuno"},
+    {k:"側",m:"côté / flanc",r:"soku / kawa"},
+    {k:"基",m:"base / fondation / standard",r:"ki / moto"},
+    {k:"準",m:"niveau / standard",r:"jun"},
+    {k:"均",m:"égal / uniforme",r:"kin / hira"},
+    {k:"制",m:"système / contrôler",r:"sei"},
+    {k:"率",m:"taux / proportion",r:"ritsu / sotsu"},
+    {k:"値",m:"valeur / prix / chiffre",r:"chi / ne"},
+    {k:"額",m:"montant / somme / front",r:"gaku / hitai"},
+    {k:"費",m:"dépense / frais / consommer",r:"hi / tsui-"},
+    {k:"益",m:"profit / bénéfice / utilité",r:"eki / yaku"},
+    {k:"損",m:"perte / dommage / nuire",r:"son / soko-"},
+    {k:"資",m:"ressources / capital",r:"shi"},
+    {k:"産",m:"produire / naissance / biens",r:"san / u-"},
+    {k:"収",m:"percevoir / collecter",r:"shuu / osa-"},
+    {k:"支",m:"supporter / branche / payer",r:"shi / sasa-"},
+    {k:"税",m:"impôt / taxe",r:"zei"},
+    {k:"価",m:"prix / valeur",r:"ka / atai"},
+    {k:"供",m:"fournir / offrir / compagnon",r:"kyou / tomo"},
+    {k:"需",m:"besoin / demande",r:"ju"},
+    {k:"給",m:"fournir / salaire",r:"kyuu"},
+    {k:"輸",m:"transporter / exporter",r:"yu"},
+    {k:"貿",m:"commerce / échanges",r:"bou"},
+    {k:"企",m:"planifier / entreprise",r:"ki / kuwada-"},
+    {k:"画",m:"image / tracer / planifier",r:"kaku / ga"},
+    {k:"策",m:"plan / stratégie / mesure",r:"saku"},
+    {k:"略",m:"abréviation / plan / omettre",r:"ryaku"},
+    {k:"拡",m:"étendre / élargir",r:"kaku / hiro-"},
+    {k:"縮",m:"réduire / contracter",r:"shuku / chiji-"},
+    {k:"推",m:"pousser / recommander / déduire",r:"sui / o-"},
+    {k:"測",m:"mesurer / évaluer",r:"soku / haka-"},
+    {k:"精",m:"précis / esprit / raffiner",r:"sei / shoo"},
+    {k:"密",m:"dense / secret / intime",r:"mitsu"},
+    {k:"厳",m:"strict / sévère / solennel",r:"gen / gon / ogo-"},
+    {k:"激",m:"violent / intense / s'agiter",r:"geki / hage-"},
+    {k:"穏",m:"calme / tranquille / stable",r:"on / odaya-"},
+    {k:"柔",m:"souple / doux / flexible",r:"juu / nyuu / yawa-"},
+  ],
+
+  1: [
+    {k:"契",m:"contrat / accord / promettre",r:"kei / chigi-"},
+    {k:"締",m:"conclure / fermer / serrer",r:"tei / shi-"},
+    {k:"違",m:"différent / erroné / violer",r:"i / chiga-"},
+    {k:"抗",m:"résister / s'opposer",r:"kou"},
+    {k:"崩",m:"s'effondrer / ruine",r:"hou / kuzu-"},
+    {k:"壊",m:"détruire / s'effondrer",r:"kai / kowa-"},
+    {k:"廃",m:"abandonner / ruine / désuet",r:"hai / suta-"},
+    {k:"滅",m:"extinction / disparaître",r:"metsu"},
+    {k:"衰",m:"déclin / s'affaiblir",r:"sui / otoro-"},
+    {k:"繁",m:"prospère / florissant",r:"han / shige-"},
+    {k:"栄",m:"gloire / prospérer",r:"ei / saka-"},
+    {k:"興",m:"prospérité / enthousiasme",r:"kou / kyou / oko-"},
+    {k:"盛",m:"prospère / plein / servir",r:"sei / saka- / mo-"},
+    {k:"勢",m:"puissance / force / tendance",r:"sei / ikio-"},
+    {k:"威",m:"autorité / dignité / prestige",r:"i"},
+    {k:"権",m:"pouvoir / droit / autorité",r:"ken / gon"},
+    {k:"覇",m:"hégémonie / suprématie",r:"ha"},
+    {k:"猛",m:"féroce / violent / farouche",r:"mou / take-"},
+    {k:"烈",m:"intense / ardent / violent",r:"retsu / hage-"},
+    {k:"燃",m:"brûler / s'enflammer",r:"nen / mo-"},
+    {k:"炎",m:"flamme / inflammation",r:"en / honoo"},
+    {k:"輝",m:"briller / rayonner",r:"ki / kagaya-"},
+    {k:"閃",m:"éclair / idée soudaine",r:"sen / hirameite"},
+    {k:"霊",m:"esprit / âme / divin",r:"rei / tama"},
+    {k:"魂",m:"âme / esprit",r:"kon / tama"},
+    {k:"魅",m:"fasciner / charme",r:"mi"},
+    {k:"妖",m:"mystérieux / démon",r:"you / ayashi"},
+    {k:"幽",m:"obscur / profond / fantôme",r:"yuu"},
+    {k:"玄",m:"profond / mystérieux",r:"gen / kuro"},
+    {k:"邪",m:"malveillant / pervers",r:"ja / yokoshima"},
+    {k:"禍",m:"catastrophe / malheur",r:"ka / wazawai"},
+    {k:"克",m:"vaincre / surmonter",r:"koku"},
+    {k:"奪",m:"arracher / saisir de force",r:"datsu / uba-"},
+    {k:"脅",m:"menacer / contraindre",r:"kyou / odo-"},
+    {k:"紛",m:"confusion / dispute / ressembler",r:"fun / magi-"},
+    {k:"絡",m:"s'enchevêtrer / contacter",r:"raku / kara-"},
+    {k:"繰",m:"dérouler / répéter",r:"kuri-"},
+    {k:"執",m:"saisir / s'attacher / rédiger",r:"shitsu / shuu / tori-"},
+    {k:"諦",m:"renoncer / résignation / vérité",r:"tei / akirame-"},
+    {k:"覚",m:"s'éveiller / réaliser",r:"kaku / sa-"},
+    {k:"悟",m:"comprendre / réaliser / éveil",r:"go / sato-"},
+  ]
+};
+
+// ──────────────────────────────────────────────────────
+//  NUMBERS DATA
+//  Format: { n: valeur (int), k: kanji, r: lecture (romaji) }
+// ──────────────────────────────────────────────────────
+const NUMBERS = [
+  {n:0,     k:"零",    r:"rei / zero"},
+  {n:1,     k:"一",    r:"ichi / hito-"},
+  {n:2,     k:"二",    r:"ni / futa-"},
+  {n:3,     k:"三",    r:"san / mi-"},
+  {n:4,     k:"四",    r:"shi / yon"},
+  {n:5,     k:"五",    r:"go / itsu-"},
+  {n:6,     k:"六",    r:"roku / mu-"},
+  {n:7,     k:"七",    r:"shichi / nana"},
+  {n:8,     k:"八",    r:"hachi / ya-"},
+  {n:9,     k:"九",    r:"kyuu / kokono-"},
+  {n:10,    k:"十",    r:"juu / too"},
+  {n:11,    k:"十一",  r:"juu-ichi"},
+  {n:12,    k:"十二",  r:"juu-ni"},
+  {n:13,    k:"十三",  r:"juu-san"},
+  {n:14,    k:"十四",  r:"juu-shi / juu-yon"},
+  {n:15,    k:"十五",  r:"juu-go"},
+  {n:16,    k:"十六",  r:"juu-roku"},
+  {n:17,    k:"十七",  r:"juu-shichi / juu-nana"},
+  {n:18,    k:"十八",  r:"juu-hachi"},
+  {n:19,    k:"十九",  r:"juu-kyuu"},
+  {n:20,    k:"二十",  r:"ni-juu"},
+  {n:30,    k:"三十",  r:"san-juu"},
+  {n:40,    k:"四十",  r:"shi-juu / yon-juu"},
+  {n:50,    k:"五十",  r:"go-juu"},
+  {n:60,    k:"六十",  r:"roku-juu"},
+  {n:70,    k:"七十",  r:"nana-juu"},
+  {n:80,    k:"八十",  r:"hachi-juu"},
+  {n:90,    k:"九十",  r:"kyuu-juu"},
+  {n:100,   k:"百",    r:"hyaku"},
+  {n:200,   k:"二百",  r:"ni-hyaku"},
+  {n:300,   k:"三百",  r:"san-byaku"},
+  {n:400,   k:"四百",  r:"yon-hyaku"},
+  {n:500,   k:"五百",  r:"go-hyaku"},
+  {n:600,   k:"六百",  r:"roppyaku"},
+  {n:700,   k:"七百",  r:"nana-hyaku"},
+  {n:800,   k:"八百",  r:"happyaku"},
+  {n:900,   k:"九百",  r:"kyuu-hyaku"},
+  {n:1000,  k:"千",    r:"sen"},
+  {n:2000,  k:"二千",  r:"ni-sen"},
+  {n:3000,  k:"三千",  r:"san-zen"},
+  {n:4000,  k:"四千",  r:"yon-sen"},
+  {n:5000,  k:"五千",  r:"go-sen"},
+  {n:10000, k:"万",    r:"man / ichiman"},
+];
+
+// ──────────────────────────────────────────────────────
+//  CONFIG NIVEAUX
+// ──────────────────────────────────────────────────────
+const LV_CONFIG = {
+  5: { cls:"n5", label:"N5", name:"Débutant",       desc:"Kanjis fondamentaux",     color:"var(--n5)" },
+  4: { cls:"n4", label:"N4", name:"Élémentaire",    desc:"Vie quotidienne de base",  color:"var(--n4)" },
+  3: { cls:"n3", label:"N3", name:"Intermédiaire",  desc:"Niveau intermédiaire",    color:"var(--n3)" },
+  2: { cls:"n2", label:"N2", name:"Avancé",         desc:"Niveau supérieur",        color:"var(--n2)" },
+  1: { cls:"n1", label:"N1", name:"Expert",         desc:"Maîtrise native",         color:"var(--n1)" },
+};
+const LV_ORDER = [5, 4, 3, 2, 1];
+// Pour débloquer N4 il faut avoir un score ≥70% en N5, etc.
+const UNLOCK_FROM = { 4:5, 3:4, 2:3, 1:2 };
+
+// ──────────────────────────────────────────────────────
+//  STATE
+// ──────────────────────────────────────────────────────
+let ST = loadState();
+let session   = null;
+let curMode   = "km";  // km = kanji→meaning, mk = meaning→kanji
+
+function loadState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("kanji_v2") || "{}");
+    return {
+      mastered:  new Set(raw.mastered  || []),
+      unlocked:  new Set(raw.unlocked  || [5]),
+      streak:    raw.streak   || 0,
+      sessions:  raw.sessions || 0,
+      level:     raw.level    || 5,
+    };
+  } catch {
+    return { mastered: new Set(), unlocked: new Set([5]), streak:0, sessions:0, level:5 };
+  }
+}
+
+function saveState() {
+  localStorage.setItem("kanji_v2", JSON.stringify({
+    mastered:  [...ST.mastered],
+    unlocked:  [...ST.unlocked],
+    streak:    ST.streak,
+    sessions:  ST.sessions,
+    level:     ST.level,
+  }));
+}
+
+// ──────────────────────────────────────────────────────
+//  NAVIGATION
+// ──────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function goHome() { show("screen-home"); renderHome(); }
+
+// ──────────────────────────────────────────────────────
+//  HOME
+// ──────────────────────────────────────────────────────
+function renderHome() {
+  const total = Object.values(DB).reduce((a, arr) => a + arr.length, 0);
+  document.getElementById("s-mastered").textContent = ST.mastered.size;
+  document.getElementById("s-streak").textContent   = ST.streak;
+  document.getElementById("s-sessions").textContent = ST.sessions;
+  document.getElementById("s-total").textContent    = total;
+
+  const grid = document.getElementById("levels-grid");
+  grid.innerHTML = "";
+
+  for (const lv of LV_ORDER) {
+    const cfg     = LV_CONFIG[lv];
+    const kanji   = DB[lv];
+    const total   = kanji.length;
+    const done    = kanji.filter(d => ST.mastered.has(d.k)).length;
+    const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
+    const locked  = !ST.unlocked.has(lv);
+    const sel     = ST.level === lv;
+
+    const div = document.createElement("div");
+    div.className = `lv-card ${cfg.cls}${sel ? " sel" : ""}${locked ? " locked" : ""}`;
+    div.dataset.lv = lv;
+    div.innerHTML = `
+      ${locked ? '<span class="lv-lock">🔒</span>' : ""}
+      <div class="lv-badge">${cfg.label}</div>
+      <div class="lv-name">${cfg.name}</div>
+      <div class="lv-desc">${cfg.desc}</div>
+      <div class="lv-bar"><div class="lv-bar-fill" style="width:${locked?0:pct}%"></div></div>
+      <div class="lv-stats">${locked ? "Verrouillé" : `${done} / ${total} maîtrisés (${pct}%)`}</div>
+    `;
+    if (!locked) div.onclick = () => selectLevel(lv);
+    grid.appendChild(div);
+  }
+}
+
+function selectLevel(lv) {
+  ST.level = lv;
+  saveState();
+  document.querySelectorAll(".lv-card").forEach(c => {
+    c.classList.toggle("sel", parseInt(c.dataset.lv) === lv);
+  });
+}
+
+function setMode(m) {
+  curMode = m;
+  document.getElementById("tab-km").classList.toggle("active", m === "km");
+  document.getElementById("tab-mk").classList.toggle("active", m === "mk");
+}
+
+function resetConfirm() {
+  if (confirm("Réinitialiser toute la progression ? Cette action est irréversible.")) {
+    localStorage.removeItem("kanji_v2");
+    ST = loadState();
+    renderHome();
+  }
+}
+
+// ──────────────────────────────────────────────────────
+//  SESSION
+// ──────────────────────────────────────────────────────
+function startSession() {
+  const lv      = ST.level;
+  const all     = DB[lv];
+  const unseen  = all.filter(d => !ST.mastered.has(d.k));
+  const seen    = all.filter(d =>  ST.mastered.has(d.k));
+
+  let pool;
+  if (unseen.length >= 10)       pool = shuffle([...unseen]).slice(0, 10);
+  else if (unseen.length > 0)    pool = shuffle([...unseen, ...shuffle([...seen]).slice(0, 10 - unseen.length)]).slice(0, 10);
+  else                           pool = shuffle([...seen]).slice(0, Math.min(10, seen.length));
+
+  ST.sessions++;
+  saveState();
+
+  session = {
+    lv,
+    cards:   pool,
+    idx:     0,
+    score:   0,
+    correct: [],   // kanji answered correctly
+    wrong:   [],   // kanji answered incorrectly
+    done:    false,
+  };
+
+  show("screen-session");
+  renderCard();
+}
+
+function renderCard() {
+  const card  = session.cards[session.idx];
+  const total = session.cards.length;
+
+  document.getElementById("sess-counter").textContent      = `Kanji ${session.idx + 1} / ${total}`;
+  document.getElementById("sess-score").textContent        = `✓ ${session.score}`;
+  document.getElementById("prog-fill").style.width         = `${(session.idx / total) * 100}%`;
+
+  const fc = document.getElementById("flash-card");
+  fc.className = "flash-card";
+
+  const lbl  = document.getElementById("card-lbl");
+  const main = document.getElementById("card-main");
+  const rdg  = document.getElementById("card-reading");
+
+  if (curMode === "km") {
+    lbl.textContent  = "Quel est le sens de ce kanji ?";
+    main.className   = "kanji-big";
+    main.textContent = card.k;
+    rdg.textContent  = "";
+  } else {
+    lbl.textContent  = "Quel est le kanji correspondant ?";
+    main.className   = "meaning-big";
+    main.textContent = card.m;
+    rdg.textContent  = `Lecture : ${card.r}`;
+  }
+
+  // Build 4 choices
+  const otherLevel = DB[session.lv].filter(d => d.k !== card.k);
+  const wrongs     = shuffle(otherLevel).slice(0, 3);
+  const choices    = shuffle([card, ...wrongs]);
+
+  const grid = document.getElementById("choices-grid");
+  grid.innerHTML = "";
+
+  choices.forEach((ch, i) => {
+    const btn = document.createElement("button");
+    btn.className   = "choice-btn";
+    btn.dataset.idx = i;
+    btn.dataset.key = ch.k;
+
+    if (curMode === "km") {
+      btn.textContent = ch.m;
+    } else {
+      btn.innerHTML   = `<span class="choice-kanji">${ch.k}</span>`;
+    }
+
+    btn.onclick = () => handleAnswer(btn, ch, card);
+    grid.appendChild(btn);
+  });
+
+  // Store choices for keyboard nav
+  session._choices = choices;
+  session._card    = card;
+  session.answered = false;
+  document.getElementById("next-btn").classList.remove("visible");
+}
+
+function handleAnswer(btn, chosen, correct) {
+  if (session.answered) return;
+  session.answered = true;
+
+  const isOk = chosen.k === correct.k;
+  const fc   = document.getElementById("flash-card");
+
+  if (isOk) {
+    session.score++;
+    session.correct.push(correct);
+    fc.classList.add("correct");
+    btn.classList.add("correct-c");
+  } else {
+    session.wrong.push(correct);
+    fc.classList.add("wrong");
+    btn.classList.add("wrong-c");
+    // Highlight correct
+    document.querySelectorAll(".choice-btn").forEach(b => {
+      if (b.dataset.key === correct.k && b !== btn) b.classList.add("correct-c");
+    });
+  }
+
+  // Always show reading after answer
+  const rdg = document.getElementById("card-reading");
+  rdg.textContent = `Lecture : ${correct.r}`;
+  if (curMode === "mk") {
+    document.getElementById("card-main").textContent = correct.m;
+  }
+
+  document.querySelectorAll(".choice-btn").forEach(b => b.disabled = true);
+
+  const nb = document.getElementById("next-btn");
+  nb.textContent = (session.idx + 1 < session.cards.length) ? "Suivant →" : "Voir les résultats →";
+  nb.classList.add("visible");
+}
+
+function nextCard() {
+  session.idx++;
+  if (session.idx < session.cards.length) {
+    renderCard();
+  } else {
+    endSession();
+  }
+}
+
+function endSession() {
+  const pct = session.score / session.cards.length;
+
+  // Streak
+  ST.streak = pct >= 0.7 ? ST.streak + 1 : 0;
+
+  // Mastery: mark correctly answered kanji if session passed
+  if (pct >= 0.7) session.correct.forEach(c => ST.mastered.add(c.k));
+
+  // Unlock next level
+  let unlocked = null;
+  const nextLv = { 5:4, 4:3, 3:2, 2:1 }[session.lv];
+  if (nextLv && pct >= 0.7 && !ST.unlocked.has(nextLv)) {
+    ST.unlocked.add(nextLv);
+    unlocked = nextLv;
+  }
+
+  saveState();
+  showResults(session.score, session.cards.length, session.wrong, unlocked);
+}
+
+// ──────────────────────────────────────────────────────
+//  RESULTS
+// ──────────────────────────────────────────────────────
+function showResults(score, total, mistakes, unlocked) {
+  const pct = score / total;
+
+  const [word, msg, sub] =
+    pct >= 0.9  ? ["完璧", "Parfait ! Maîtrise absolue !",           "Vous avez une mémoire exceptionnelle."] :
+    pct >= 0.7  ? ["合格", "Excellent résultat !",                    `${score >= total ? "Score parfait !" : "Continuez ainsi pour maîtriser le niveau suivant."}`] :
+    pct >= 0.5  ? ["半分", "Pas mal, mais peut mieux faire.",         "Revoyez les kanji manqués et réessayez."] :
+                  ["要練習","Il faut s'entraîner davantage.",         "Ne vous découragez pas — la répétition est la clé !"];
+
+  document.getElementById("res-word").textContent  = word;
+  document.getElementById("res-title").textContent = `${score} bonne${score>1?"s":""} réponse${score>1?"s":""} sur ${total}`;
+  document.getElementById("res-score").textContent = score;
+  document.getElementById("res-denom").textContent = `/ ${total}`;
+  document.getElementById("res-msg").textContent   = msg;
+  document.getElementById("res-sub").textContent   = sub;
+
+  const ub = document.getElementById("unlock-banner");
+  if (unlocked) {
+    ub.style.display = "block";
+    ub.textContent   = `🎉 Niveau N${unlocked} (${LV_CONFIG[unlocked].name}) débloqué !`;
+  } else {
+    ub.style.display = "none";
+  }
+
+  const ms  = document.getElementById("mistakes-section");
+  const ml  = document.getElementById("mistakes-list");
+  if (mistakes.length > 0) {
+    ms.style.display = "block";
+    ml.innerHTML = mistakes.map(m => `
+      <div class="mistake-row">
+        <div class="mistake-k">${m.k}</div>
+        <div class="mistake-info">
+          <div class="mistake-m">${m.m}</div>
+          <div class="mistake-r">Lecture : ${m.r}</div>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    ms.style.display = "none";
+  }
+
+  show("screen-results");
+}
+
+// ──────────────────────────────────────────────────────
+//  KEYBOARD SHORTCUTS
+// ──────────────────────────────────────────────────────
+document.addEventListener("keydown", e => {
+  const screen = document.querySelector(".screen.active")?.id;
+
+  if (screen === "screen-session") {
+    if (!session) return;
+
+    if (!session.answered) {
+      const map = { "1":0, "2":1, "3":2, "4":3 };
+      if (map[e.key] !== undefined) {
+        const btns = document.querySelectorAll(".choice-btn");
+        if (btns[map[e.key]]) btns[map[e.key]].click();
+      }
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const nb = document.getElementById("next-btn");
+      if (nb.classList.contains("visible")) nb.click();
+    }
+  }
+});
+
+// ──────────────────────────────────────────────────────
+//  NUMBERS
+// ──────────────────────────────────────────────────────
+let numState = {
+  mode:     "learn",   // "learn" | "quiz"
+  order:    "order",   // "order" | "shuffle"  (learn only)
+  dir:      "nk",      // "nk" (123→漢字) | "kn" (漢字→123)  (quiz only)
+  deck:     [...NUMBERS],
+  idx:      0,
+  revealed: false,
+  answered: false,
+};
+
+function showNumbers() {
+  numState.idx      = 0;
+  numState.revealed = false;
+  numState.answered = false;
+  numState.deck     = [...NUMBERS];
+  show("screen-numbers");
+  renderNum();
+}
+
+// ── Switchers ──
+function setNumMode(m) {
+  numState.mode = m;
+  numState.idx = 0; numState.revealed = false; numState.answered = false;
+  numState.deck = (numState.mode === "learn" && numState.order === "shuffle")
+    ? shuffle([...NUMBERS]) : [...NUMBERS];
+  document.getElementById("num-tab-learn").classList.toggle("active", m === "learn");
+  document.getElementById("num-tab-quiz").classList.toggle("active",  m === "quiz");
+  document.getElementById("num-order-wrap").style.display = m === "learn" ? "" : "none";
+  document.getElementById("num-dir-wrap").style.display   = m === "quiz"  ? "" : "none";
+  renderNum();
+}
+
+function setNumOrder(o) {
+  numState.order = o;
+  document.getElementById("num-tab-order").classList.toggle("active",   o === "order");
+  document.getElementById("num-tab-shuffle").classList.toggle("active", o === "shuffle");
+  numState.idx = 0; numState.revealed = false;
+  numState.deck = o === "order" ? [...NUMBERS] : shuffle([...NUMBERS]);
+  renderNum();
+}
+
+function setNumDir(d) {
+  numState.dir = d;
+  document.getElementById("num-tab-nk").classList.toggle("active", d === "nk");
+  document.getElementById("num-tab-kn").classList.toggle("active", d === "kn");
+  numState.idx = 0; numState.answered = false;
+  numState.deck = shuffle([...NUMBERS]);
+  renderNum();
+}
+
+// ── Dispatcher ──
+function renderNum() {
+  const total = numState.deck.length;
+  const entry = numState.deck[numState.idx];
+  document.getElementById("num-counter").textContent = `${numState.idx + 1} / ${total}`;
+  document.getElementById("num-prog").style.width    = `${(numState.idx / (total - 1)) * 100}%`;
+
+  if (numState.mode === "learn") renderNumLearn(entry, total);
+  else                           renderNumQuiz(entry);
+}
+
+// ── APPRENTISSAGE ──
+function renderNumLearn(entry, total) {
+  document.getElementById("num-choices").style.display    = "none";
+  document.getElementById("num-next-quiz").style.display  = "none";
+  document.getElementById("num-nav-learn").style.display  = "";
+
+  const card = document.getElementById("num-card");
+  card.style.cursor = "pointer";
+  card.onclick = revealNum;
+  card.className = "num-card";
+
+  document.getElementById("num-card-main").innerHTML =
+    `<div class="num-number">${entry.n.toLocaleString("fr")}</div>`;
+  document.getElementById("num-card-reveal").innerHTML =
+    `<div class="num-kanji">${entry.k}</div><div class="num-reading">${entry.r}</div>`;
+
+  const reveal = document.getElementById("num-reveal");
+  const hint   = document.getElementById("num-hint");
+  if (numState.revealed) {
+    reveal.classList.remove("hidden");
+    hint.style.display = "none";
+  } else {
+    reveal.classList.add("hidden");
+    hint.style.display = "";
+  }
+
+  document.getElementById("num-prev").disabled = numState.idx === 0;
+  document.getElementById("num-next-learn").textContent =
+    numState.idx + 1 < total ? "Suivant →" : "Recommencer";
+}
+
+function revealNum() {
+  if (numState.mode !== "learn" || numState.revealed) return;
+  numState.revealed = true;
+  renderNum();
+}
+
+function nextNum() {
+  if (numState.idx + 1 < numState.deck.length) {
+    numState.idx++;
+  } else {
+    numState.idx = 0;
+    if (numState.order === "shuffle") numState.deck = shuffle([...NUMBERS]);
+  }
+  numState.revealed = false;
+  renderNum();
+}
+
+function prevNum() {
+  if (numState.idx > 0) {
+    numState.idx--;
+    numState.revealed = false;
+    renderNum();
+  }
+}
+
+// ── QUIZ ──
+function renderNumQuiz(entry) {
+  document.getElementById("num-nav-learn").style.display  = "none";
+  document.getElementById("num-reveal").classList.add("hidden");
+  document.getElementById("num-hint").style.display       = "none";
+
+  const card = document.getElementById("num-card");
+  card.style.cursor = "default";
+  card.onclick = null;
+  card.className = "num-card";
+
+  // Contenu de la carte selon la direction
+  if (numState.dir === "nk") {
+    // Afficher le chiffre, choisir le kanji
+    document.getElementById("num-card-main").innerHTML =
+      `<div class="num-number">${entry.n.toLocaleString("fr")}</div>`;
+  } else {
+    // Afficher le kanji + lecture, choisir le chiffre
+    document.getElementById("num-card-main").innerHTML =
+      `<div class="num-kanji">${entry.k}</div><div class="num-reading">${entry.r}</div>`;
+  }
+
+  // Construire 4 choix
+  const others  = NUMBERS.filter(e => e.n !== entry.n);
+  const wrongs  = shuffle([...others]).slice(0, 3);
+  const choices = shuffle([entry, ...wrongs]);
+
+  const grid = document.getElementById("num-choices");
+  grid.style.display = "";
+  grid.innerHTML = "";
+  choices.forEach(ch => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.dataset.n = ch.n;
+    if (numState.dir === "nk") {
+      btn.innerHTML = `<span class="choice-kanji">${ch.k}</span>`;
+    } else {
+      btn.textContent = ch.n.toLocaleString("fr");
+    }
+    btn.onclick = () => handleNumAnswer(btn, ch, entry);
+    grid.appendChild(btn);
+  });
+
+  numState.answered = false;
+  document.getElementById("num-next-quiz").classList.remove("visible");
+  document.getElementById("num-next-quiz").style.display = "";
+}
+
+function handleNumAnswer(btn, chosen, correct) {
+  if (numState.answered) return;
+  numState.answered = true;
+
+  const isOk = chosen.n === correct.n;
+  const card  = document.getElementById("num-card");
+  card.classList.add(isOk ? "correct" : "wrong");
+  btn.classList.add(isOk ? "correct-c" : "wrong-c");
+
+  if (!isOk) {
+    document.querySelectorAll("#num-choices .choice-btn").forEach(b => {
+      if (parseInt(b.dataset.n) === correct.n) b.classList.add("correct-c");
+    });
+  }
+
+  // Révéler la réponse complète sur la carte
+  document.getElementById("num-card-reveal").innerHTML =
+    `<div class="num-kanji">${correct.k}</div><div class="num-reading">${correct.r}</div>`;
+  document.getElementById("num-reveal").classList.remove("hidden");
+
+  document.querySelectorAll("#num-choices .choice-btn").forEach(b => b.disabled = true);
+
+  const nb = document.getElementById("num-next-quiz");
+  nb.textContent = numState.idx + 1 < numState.deck.length ? "Suivant →" : "Recommencer";
+  nb.classList.add("visible");
+}
+
+function nextNumQuiz() {
+  if (numState.idx + 1 < numState.deck.length) {
+    numState.idx++;
+  } else {
+    numState.idx = 0;
+    numState.deck = shuffle([...NUMBERS]);
+  }
+  numState.answered = false;
+  renderNum();
+}
+
+// ──────────────────────────────────────────────────────
+//  UTILS
+// ──────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ──────────────────────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────────────────────
+if (sessionStorage.getItem("kanji_auth") === "1") {
+  show("screen-home");
+  renderHome();
+} else {
+  show("screen-password");
+  setTimeout(() => document.getElementById("pwd-input").focus(), 100);
+}
+
+// ── PWA Service Worker ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>
